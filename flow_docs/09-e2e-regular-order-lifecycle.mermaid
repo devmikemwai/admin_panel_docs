@@ -1,0 +1,66 @@
+---
+title: End-to-End — Regular Order Lifecycle
+---
+graph TD
+    subgraph CUSTOMER["🛒 Customer Storefront"]
+        C1[Customer Browses Products] --> C2[Adds Items to Cart]
+        C2 --> C3[Proceeds to Checkout]
+        C3 --> C4[Enters Delivery Details<br/>Zone / Address]
+        C4 --> C5{Payment Method}
+    end
+
+    subgraph PAYMENT["💳 Payment Processing"]
+        C5 -->|M-Pesa| P1[STK Push Sent to Phone]
+        C5 -->|Card| P2[Card Gateway Redirect]
+        C5 -->|Cash on Delivery| P3[Order Created as Unpaid]
+        P1 --> P4[Customer Enters PIN]
+        P4 --> P5{M-Pesa Callback}
+        P2 --> P5
+        P5 -->|Success| P6["✅ Payment Confirmed<br/>Transaction Recorded"]
+        P5 -->|Failed| P7["❌ Payment Failed<br/>Retry Available"]
+        P7 --> P1
+    end
+
+    subgraph ORDER_CREATED["📦 Order Creation"]
+        P6 --> O1["Order Created<br/>ID: ORD-YYYYMMDD-XXXX<br/>Status: Pending"]
+        P3 --> O1
+        O1 --> O2[SMS/Notification to Customer]
+        O1 --> O3[Appears in Admin Dashboard]
+    end
+
+    subgraph NEXTECH["🔄 Nextech Sync"]
+        P6 --> N1{Payment Successful?}
+        N1 -->|Yes| N2[Post Items to Nextech]
+        N2 --> N3[Sync Status: Posted]
+        N1 -->|No| N4[Sync Deferred]
+    end
+
+    subgraph ADMIN_FULFILL["👨‍💼 Admin Fulfillment"]
+        O3 --> A1["Status → Received<br/>Admin acknowledges order"]
+        A1 --> A2["Status → Preparing<br/>Pharmacy prepares items"]
+        A2 --> A3["Status → Ready<br/>Order packed and ready"]
+        A3 --> A4["Status → Dispatched<br/>Handed to courier"]
+        A4 --> A5["Add Tracking Info<br/>Tracking # / Carrier / URL"]
+        A5 --> A6["Status → Delivered<br/>Customer confirms receipt"]
+    end
+
+    subgraph NOTIFICATIONS["🔔 Notifications at Each Step"]
+        A1 --> NT1[SMS: Order received by pharmacy]
+        A4 --> NT2[SMS: Order dispatched + tracking]
+        A6 --> NT3[SMS: Delivery confirmed]
+    end
+
+    subgraph ADMIN_TOOLS["🛠️ Admin Tools During Fulfillment"]
+        O3 --> AT1[Add Admin Notes]
+        O3 --> AT2[View Customer Details]
+        O3 --> AT3[View Payment Info]
+        O3 --> AT4[View Nextech Sync Status]
+    end
+
+    style CUSTOMER fill:#e8f5e9,stroke:#2e7d32
+    style PAYMENT fill:#fff8e1,stroke:#f9a825
+    style ORDER_CREATED fill:#e3f2fd,stroke:#1565c0
+    style NEXTECH fill:#e8eaf6,stroke:#283593
+    style ADMIN_FULFILL fill:#f3e5f5,stroke:#6a1b9a
+    style NOTIFICATIONS fill:#fce4ec,stroke:#c62828
+    style ADMIN_TOOLS fill:#e0f7fa,stroke:#00838f

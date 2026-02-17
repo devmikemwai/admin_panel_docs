@@ -1,0 +1,79 @@
+---
+title: M-Pesa Payments — Complete Workflow
+---
+graph TD
+    subgraph LOAD["💳 M-Pesa Module Load"]
+        A[Admin Opens M-Pesa] --> B[GET /mpesa/stats]
+        B --> C[Render Stat Cards]
+        A --> D[GET /mpesa/transactions]
+        D --> E[Render Transaction Table]
+    end
+
+    subgraph STATS["📊 M-Pesa Stats"]
+        C --> S1["💰 Total Revenue"]
+        C --> S2["📅 Todays Transactions"]
+        C --> S3["✅ Successful"]
+        C --> S4["⏳ Pending"]
+        C --> S5["❌ Failed"]
+    end
+
+    subgraph FILTERS["🔍 Filters"]
+        E --> F1["Status Filter<br/>successful / pending / failed"]
+        E --> F2["Date Range<br/>From → To"]
+        E --> F3["Search<br/>Transaction ID / Order Number /<br/>Customer Name / Phone Number"]
+        F1 & F2 & F3 -->|Apply| D
+    end
+
+    subgraph TABLE["📋 Transaction Listing Table"]
+        E --> T1[Transaction ID]
+        E --> T2[Order ID]
+        E --> T3[Customer Name]
+        E --> T4[Phone Number]
+        E --> T5[Amount]
+        E --> T6["Status<br/>✅ successful / ⏳ pending / ❌ failed"]
+        E --> T7[Date]
+    end
+
+    subgraph DETAIL["📄 Transaction Detail"]
+        T1 -->|Click| DET[GET /mpesa/transactions/id]
+        DET --> DT1[Transaction ID]
+        DET --> DT2[M-Pesa Receipt Number]
+        DET --> DT3[Linked Order ID]
+        DET --> DT4[Customer Name + Phone]
+        DET --> DT5[Amount]
+        DET --> DT6[Status]
+        DET --> DT7[Initiated At]
+        DET --> DT8[Completed At]
+        DET --> DT9[Callback Data / Raw Response]
+    end
+
+    subgraph PAYMENT_FLOW["💸 M-Pesa Payment Flow (Background)"]
+        PF1[Customer Initiates Payment] --> PF2[System Sends STK Push<br/>to Customer Phone]
+        PF2 --> PF3[Customer Enters M-Pesa PIN]
+        PF3 --> PF4{M-Pesa API Callback}
+        PF4 -->|ResultCode: 0| PF5["✅ Transaction: Successful"]
+        PF4 -->|Timeout| PF6["⏳ Transaction: Pending"]
+        PF4 -->|Error| PF7["❌ Transaction: Failed"]
+        PF5 --> PF8[Update Order Payment = Paid]
+        PF8 --> PF9[Trigger Nextech Inventory Sync]
+        PF8 --> PF10[Send Confirmation SMS to Customer]
+        PF6 --> PF11[Poll / Query Transaction Status]
+        PF11 --> PF4
+        PF7 --> PF12[Notify Customer of Failure]
+        PF12 --> PF13[Customer Can Retry Payment]
+        PF13 --> PF2
+    end
+
+    subgraph STATUS_BADGE["🏷️ Status Badge Colors"]
+        SB1["✅ Successful → Green Badge"]
+        SB2["⏳ Pending → Yellow Badge"]
+        SB3["❌ Failed → Red Badge"]
+    end
+
+    style LOAD fill:#e8f5e9,stroke:#2e7d32
+    style STATS fill:#e3f2fd,stroke:#1565c0
+    style FILTERS fill:#fff3e0,stroke:#e65100
+    style TABLE fill:#e0f7fa,stroke:#00838f
+    style DETAIL fill:#f3e5f5,stroke:#6a1b9a
+    style PAYMENT_FLOW fill:#fff8e1,stroke:#f9a825
+    style STATUS_BADGE fill:#f5f5f5,stroke:#616161

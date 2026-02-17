@@ -1,0 +1,92 @@
+---
+title: End-to-End — Prescription Order Lifecycle
+---
+graph TD
+    subgraph CUSTOMER["🛒 Customer Orders Prescription Item"]
+        C1[Customer Selects Prescription Product] --> C2{Has Valid Prescription?}
+        C2 -->|Yes| C3[Upload Prescription File at Checkout]
+        C2 -->|No| C4[No Prescription Available]
+    end
+
+    subgraph TELEHEALTH["🩺 Telehealth Consultation Path"]
+        C4 --> TH1[Book Telehealth Consultation]
+        TH1 --> TH2[Select Service & Package]
+        TH2 --> TH3[Pay Consultation Fee via M-Pesa]
+        TH3 --> TH4[Doctor Conducts Virtual Consultation]
+        TH4 --> TH5{Doctor Decision}
+        TH5 -->|Prescribe Medication| TH6[Doctor Sends Prescription<br/>to Pharmacist]
+        TH5 -->|No Prescription Needed| TH7[Consultation Complete<br/>No Order Created]
+    end
+
+    subgraph PHARMACIST_UPLOAD["💊 Pharmacist Actions"]
+        TH6 --> PH1[Pharmacist Receives Prescription]
+        PH1 --> PH2["Upload Prescription on Behalf of Patient<br/>POST /prescriptions/id/upload"]
+        PH2 --> PH3["Add Medications to Order<br/>POST /prescriptions/id/medications"]
+        PH3 --> PH3a[Search Product Database]
+        PH3a --> PH3b[Select Medication]
+        PH3b --> PH3c["Set Qty / Dosage / Frequency /<br/>Duration / Instructions"]
+        PH3c --> PH3d[Medication Added to Order]
+        PH3d --> PH4[Order Total Calculated]
+        PH4 --> PH5[Customer Notified:<br/>Order Ready for Payment]
+    end
+
+    subgraph ORDER_CREATED["📋 Prescription Order Created"]
+        C3 --> OC1["Order Created<br/>ID: RX-YYYYMMDD-XXXXXX<br/>Status: Uploaded"]
+        PH2 --> OC1
+        OC1 --> OC2["Status → Under Review"]
+    end
+
+    subgraph REVIEW["✅ Prescription Review"]
+        OC2 --> RV1[Pharmacist Opens Prescription Detail]
+        RV1 --> RV2[View Prescription File]
+        RV2 --> RV3{Review Decision}
+        RV3 -->|Approve| RV4["✅ Approve & Notify Customer<br/>Fulfillment Workflow ENABLED"]
+        RV3 -->|Request Modification| RV5["⚠️ Request Changes<br/>Customer Notified"]
+        RV5 --> RV6[Customer Resubmits Prescription]
+        RV6 --> OC2
+        RV3 -->|Reject| RV7["❌ Reject & Notify<br/>Order Cancelled / Refund"]
+    end
+
+    subgraph PAYMENT_RX["💳 Prescription Payment"]
+        RV4 --> PAY1{Already Paid?}
+        PAY1 -->|No| PAY2[Customer Receives Payment Request]
+        PAY2 --> PAY3[M-Pesa STK Push]
+        PAY3 --> PAY4{Payment Result}
+        PAY4 -->|Success| PAY5["✅ Status → Paid"]
+        PAY4 -->|Failed| PAY6[Retry Payment]
+        PAY6 --> PAY3
+        PAY1 -->|Yes| PAY5
+    end
+
+    subgraph FULFILL_RX["📋 Prescription Fulfillment"]
+        PAY5 --> FW1["Status → Preparing"]
+        FW1 --> FW1a["🔄 Nextech Sync Triggers<br/>Items Posted to Inventory"]
+        FW1 --> FW2["Status → Dispatched"]
+        FW2 --> FW3["Status → Delivered"]
+        FW3 --> FW4["Status → Completed ✅"]
+    end
+
+    subgraph DELIVERY_FEE["💰 Delivery Fee Management"]
+        OC2 --> DF1["Admin Can Update Delivery Fee<br/>PATCH /prescriptions/id/delivery-fee"]
+        DF1 --> DF2[Order Total Recalculated]
+    end
+
+    subgraph FULL_WORKFLOW["📊 Complete Status Timeline"]
+        ST1["1. Uploaded"] --> ST2["2. Under Review"]
+        ST2 --> ST3["3. Doctor Consultation Done"]
+        ST3 --> ST4["4. Paid"]
+        ST4 --> ST5["5. Preparing"]
+        ST5 --> ST6["6. Dispatched"]
+        ST6 --> ST7["7. Delivered"]
+        ST7 --> ST8["8. Completed"]
+    end
+
+    style CUSTOMER fill:#e8f5e9,stroke:#2e7d32
+    style TELEHEALTH fill:#e0f7fa,stroke:#00838f
+    style PHARMACIST_UPLOAD fill:#f3e5f5,stroke:#6a1b9a
+    style ORDER_CREATED fill:#e3f2fd,stroke:#1565c0
+    style REVIEW fill:#e0f2f1,stroke:#00695c
+    style PAYMENT_RX fill:#fff8e1,stroke:#f9a825
+    style FULFILL_RX fill:#e8eaf6,stroke:#283593
+    style DELIVERY_FEE fill:#fff3e0,stroke:#e65100
+    style FULL_WORKFLOW fill:#f5f5f5,stroke:#616161

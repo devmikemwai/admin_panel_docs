@@ -1,0 +1,151 @@
+---
+title: Prescription Order Management — Complete Workflow
+---
+graph TD
+    subgraph LOAD["💊 Prescription Module Load"]
+        A[Admin Opens Prescriptions] --> B[GET /prescriptions/stats]
+        B --> C[Render Stat Cards]
+        A --> D[GET /prescriptions]
+        D --> E[Render Prescription Table]
+    end
+
+    subgraph STATS["📊 Prescription Stats"]
+        C --> S1[Total Prescriptions]
+        C --> S2[Under Review]
+        C --> S3[Payment Pending]
+        C --> S4[Paid]
+        C --> S5[Dispatched]
+        C --> S6[Delivered]
+    end
+
+    subgraph FILTERS["🔍 Filters"]
+        E --> F1["Payment Status<br/>pending / paid / failed"]
+        E --> F2["Fulfillment Status<br/>under_review / approved /<br/>rejected / preparing / etc"]
+        E --> F3["Date Range<br/>From → To"]
+        E --> F4["Search<br/>Order ID / Customer"]
+        F1 & F2 & F3 & F4 -->|Apply| D
+    end
+
+    subgraph TABLE["📋 Prescription Order Listing"]
+        E --> T1[Order ID e.g. RX-20260215-000045]
+        E --> T2[Customer Name]
+        E --> T3["Status<br/>under_review / uploaded / etc"]
+        E --> T4["Payment<br/>pending / paid"]
+        E --> T5[Items Count]
+        E --> T6[Amount]
+        E --> T7[Created At]
+        E --> T8["Actions: View Details"]
+    end
+
+    subgraph DETAIL["📄 Prescription Detail View"]
+        T8 -->|Click| DET[GET /prescriptions/id]
+        DET --> DET1["👤 Customer Information"]
+        DET --> DET2["🛍️ Order Items"]
+        DET --> DET3["💰 Order Summary"]
+        DET --> DET4["🔄 Nextech Sync"]
+        DET --> DET5["✅ Prescription Review"]
+        DET --> DET6["📋 Fulfillment Workflow"]
+        DET --> DET7["📎 Prescription File"]
+        DET --> DET8["💊 Medications Section"]
+    end
+
+    subgraph CUSTOMER["👤 Customer Information"]
+        DET1 --> CU1[Name / Phone / Email]
+        DET1 --> CU2[Gender / DOB]
+        DET1 --> CU3["Insurance Details<br/>Provider / Policy No"]
+        DET1 --> CU4["Delivery<br/>Zone / Address"]
+    end
+
+    subgraph SUMMARY["💰 Order Summary"]
+        DET3 --> OS1["Order Number: RX-YMD-000001"]
+        DET3 --> OS2["Date / Status"]
+        DET3 --> OS3["Items Summary"]
+        DET3 --> OS4["Delivery Fee"]
+        OS4 --> OS4a["Update Delivery Fee<br/>PATCH /prescriptions/id/delivery-fee"]
+        DET3 --> OS5["Total"]
+    end
+
+    subgraph NEXTECH_RX["🔄 Nextech Inventory Sync"]
+        DET4 --> NX1{"Order status = preparing?"}
+        NX1 -->|No| NX2[Sync Not Triggered Yet]
+        NX1 -->|Yes| NX3[Sync Triggered Automatically]
+        NX3 --> NX4[Status: Posted / Failed]
+        NX3 --> NX5[Posted At: timestamp]
+        NX3 --> NX6[Items Posted: true/false]
+    end
+
+    subgraph REVIEW["✅ Prescription Review Actions"]
+        DET5 --> RV1{Review Decision}
+        RV1 -->|Approve| RV2["PATCH /prescriptions/id/review<br/>action: approve"]
+        RV2 --> RV3["✅ Approved & Customer Notified<br/>Fulfillment Workflow ENABLED"]
+        RV1 -->|Request Modification| RV4["PATCH /prescriptions/id/review<br/>action: request_modification"]
+        RV4 --> RV5["⚠️ Modification Requested<br/>Customer Notified"]
+        RV5 --> RV6[Customer Resubmits]
+        RV6 --> RV1
+        RV1 -->|Reject| RV7["PATCH /prescriptions/id/review<br/>action: reject"]
+        RV7 --> RV8["❌ Rejected & Customer Notified"]
+        RV1 -->|View File| RV9[Open Prescription File Viewer]
+    end
+
+    subgraph PRESC_FILE["📎 Prescription File Section"]
+        DET7 --> PF1{File Uploaded?}
+        PF1 -->|Yes| PF2[View Prescription File<br/>PDF / Image Viewer]
+        PF2 --> PF3["Uploaded By: customer / pharmacist"]
+        PF2 --> PF4["Uploaded At: timestamp"]
+        PF1 -->|No| PF5["⬆️ Upload Prescription CTA"]
+        PF5 --> PF6["POST /prescriptions/id/upload<br/>multipart/form-data"]
+        PF6 --> PF7[File Uploaded ✅]
+    end
+
+    subgraph NO_PRESC["🩺 No Prescription Path"]
+        PF1 -->|No - Patient needs consultation| NP1[Patient Books Telehealth Consultation]
+        NP1 --> NP2[Doctor Conducts Consultation]
+        NP2 --> NP3[Doctor Sends Prescription to Pharmacist]
+        NP3 --> NP4[Pharmacist Uploads on Behalf of Patient]
+        NP4 --> PF6
+    end
+
+    subgraph FULFILL_RX["📋 Fulfillment Workflow"]
+        DET6 --> FE1{Prescription Approved?}
+        FE1 -->|No| FE2["🔒 Fulfillment DISABLED<br/>Prescription must be approved first"]
+        FE1 -->|Yes| FE3["🔓 Fulfillment ENABLED"]
+        FE3 --> FW1["1️⃣ Uploaded"]
+        FW1 --> FW2["2️⃣ Doctor Consultation Done"]
+        FW2 --> FW3["3️⃣ Paid"]
+        FW3 --> FW4["4️⃣ Preparing"]
+        FW4 -->|Nextech Sync Triggers| FW4a[Inventory Synced]
+        FW4 --> FW5["5️⃣ Dispatched"]
+        FW5 --> FW6["6️⃣ Delivered"]
+        FW6 --> FW7["7️⃣ Completed"]
+        FW1 & FW2 & FW3 & FW4 & FW5 & FW6 -->|Each Step| FWU["PATCH /prescriptions/id/fulfillment"]
+    end
+
+    subgraph MEDS["💊 Medications Section"]
+        DET8 --> M1[View Current Medications<br/>Name / Qty / Dosage /<br/>Frequency / Duration / Instructions]
+        M1 --> M2{Add Medication?}
+        M2 -->|Yes| M3["Search Product Database<br/>GET /prescriptions/id/medications/search?q="]
+        M3 --> M4[Select Medication from Results]
+        M4 --> M5["Enter Quantity*"]
+        M5 --> M6["Enter Dosage<br/>e.g. 500mg"]
+        M6 --> M7["Enter Frequency<br/>e.g. 3 times daily"]
+        M7 --> M8["Enter Duration<br/>e.g. 7 days"]
+        M8 --> M9["Enter Instructions<br/>e.g. Take after meals"]
+        M9 --> M10["POST /prescriptions/id/medications"]
+        M10 --> M11["Medication Added ✅<br/>Added By: pharmacist"]
+        M11 --> M12[Order Total Recalculated]
+        M12 --> M13[Customer Notified]
+    end
+
+    style LOAD fill:#e8f5e9,stroke:#2e7d32
+    style STATS fill:#e3f2fd,stroke:#1565c0
+    style FILTERS fill:#fff3e0,stroke:#e65100
+    style TABLE fill:#e0f7fa,stroke:#00838f
+    style DETAIL fill:#f3e5f5,stroke:#6a1b9a
+    style CUSTOMER fill:#fce4ec,stroke:#c62828
+    style SUMMARY fill:#fff8e1,stroke:#f9a825
+    style NEXTECH_RX fill:#e8eaf6,stroke:#283593
+    style REVIEW fill:#e0f2f1,stroke:#00695c
+    style PRESC_FILE fill:#f1f8e9,stroke:#558b2f
+    style NO_PRESC fill:#ede7f6,stroke:#4527a0
+    style FULFILL_RX fill:#e0f7fa,stroke:#006064
+    style MEDS fill:#fbe9e7,stroke:#bf360c

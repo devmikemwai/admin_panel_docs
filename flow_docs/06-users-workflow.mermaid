@@ -1,0 +1,74 @@
+---
+title: Users — Complete Workflow
+---
+graph TD
+    subgraph LOAD["👥 Users Module Load"]
+        A[Admin Opens Users] --> B[GET /users/stats]
+        B --> C[Render Stat Cards]
+        A --> D[GET /users]
+        D --> E[Render User Table]
+    end
+
+    subgraph STATS["📊 User Stats"]
+        C --> S1["Total Users: 5,600"]
+        C --> S2["Admin/Staff: 12"]
+    end
+
+    subgraph FILTERS["🔍 Filters"]
+        E --> F1["Role Filter<br/>admin / staff / pharmacist /<br/>doctor / customer"]
+        E --> F2["Search<br/>Name / Email / Phone"]
+        F1 & F2 -->|Apply| D
+    end
+
+    subgraph TABLE["📋 User Listing Table"]
+        E --> T1[ID]
+        E --> T2[Name]
+        E --> T3[Email]
+        E --> T4[Phone]
+        E --> T5[Role]
+        E --> T6[Status]
+        E --> T7[Created At]
+        E --> T8[Actions]
+    end
+
+    subgraph ACTIONS["⚡ User Actions"]
+        T8 --> ACT1[Edit User]
+        T8 --> ACT2[Delete User]
+    end
+
+    subgraph CREATE["➕ Create User"]
+        A -->|Add User CTA| CR1[Open User Form]
+        CR1 --> CR2["Name*"]
+        CR2 --> CR3["Email*"]
+        CR3 --> CR4["Phone"]
+        CR4 --> CR5["Role*<br/>admin / staff / pharmacist / doctor"]
+        CR5 --> CR6["Password*"]
+        CR6 --> CR7[POST /users]
+        CR7 --> CR8[User Created ✅]
+        CR8 --> D
+    end
+
+    subgraph UPDATE["✏️ Edit User"]
+        ACT1 --> UP1[Load User Data]
+        UP1 --> UP2[Edit Name / Email / Phone / Role]
+        UP2 --> UP3[PUT /users/id]
+        UP3 --> UP4[User Updated ✅]
+        UP4 --> D
+    end
+
+    subgraph DELETE["🗑️ Delete User"]
+        ACT2 --> DL1[Confirmation Dialog<br/>Are you sure?]
+        DL1 -->|Confirm| DL2[DELETE /users/id]
+        DL1 -->|Cancel| DL3[Close Dialog]
+        DL2 --> DL4[User Deleted ✅]
+        DL4 --> D
+    end
+
+    style LOAD fill:#e8f5e9,stroke:#2e7d32
+    style STATS fill:#e3f2fd,stroke:#1565c0
+    style FILTERS fill:#fff3e0,stroke:#e65100
+    style TABLE fill:#e0f7fa,stroke:#00838f
+    style ACTIONS fill:#fff8e1,stroke:#f9a825
+    style CREATE fill:#f3e5f5,stroke:#6a1b9a
+    style UPDATE fill:#e0f2f1,stroke:#00695c
+    style DELETE fill:#ffebee,stroke:#b71c1c

@@ -1,0 +1,49 @@
+---
+title: Nextech Inventory Sync — Workflow
+---
+graph TD
+    subgraph TRIGGER["🔄 Sync Trigger Conditions"]
+        T1{Order Type?}
+        T1 -->|Regular Order| T2{Payment Successful?}
+        T2 -->|Yes| T3["Sync Triggered Immediately<br/>After Payment Confirmation"]
+        T2 -->|No| T4["❌ No Sync<br/>Waiting for Payment"]
+        T1 -->|Prescription Order| T5{Status = Preparing?}
+        T5 -->|Yes| T3
+        T5 -->|No| T6["❌ No Sync<br/>Waiting for Fulfillment Progress"]
+    end
+
+    subgraph SYNC_PROCESS["⚙️ Sync Process"]
+        T3 --> S1[Collect Order Items<br/>Product IDs / SKUs / Quantities]
+        S1 --> S2[POST to Nextech API<br/>Submit Inventory Adjustment]
+        S2 --> S3{API Response}
+        S3 -->|200 OK| S4["✅ Status: Posted"]
+        S3 -->|Error / Timeout| S5["❌ Status: Failed"]
+    end
+
+    subgraph SUCCESS["✅ Successful Sync"]
+        S4 --> SC1[Record Posted Timestamp]
+        SC1 --> SC2[Mark Items as Posted: true]
+        SC2 --> SC3[Update Order Detail View<br/>Nextech section shows green]
+    end
+
+    subgraph FAILURE["❌ Failed Sync"]
+        S5 --> F1[Log Error Details]
+        F1 --> F2{Retry Count?}
+        F2 -->|Under Max Retries| F3[Wait & Retry<br/>Exponential Backoff]
+        F3 --> S2
+        F2 -->|Max Retries Reached| F4[Mark as Permanently Failed]
+        F4 --> F5[Admin Alert:<br/>Manual Intervention Required]
+    end
+
+    subgraph ADMIN_VIEW["👁️ Admin Dashboard View"]
+        AV1["Nextech Sync Section in Order Detail"]
+        AV1 --> AV2["Status: posted / pending / failed"]
+        AV1 --> AV3["Posted At: timestamp or N/A"]
+        AV1 --> AV4["Items Posted: true / false"]
+    end
+
+    style TRIGGER fill:#fff8e1,stroke:#f9a825
+    style SYNC_PROCESS fill:#e3f2fd,stroke:#1565c0
+    style SUCCESS fill:#e8f5e9,stroke:#2e7d32
+    style FAILURE fill:#ffebee,stroke:#b71c1c
+    style ADMIN_VIEW fill:#f3e5f5,stroke:#6a1b9a

@@ -1,0 +1,79 @@
+---
+title: Categories — Complete Workflow
+---
+graph TD
+    subgraph LOAD["📂 Categories Module Load"]
+        A[Admin Opens Categories] --> B[GET /categories]
+        B --> C[Render Category Listing Table]
+    end
+
+    subgraph TABLE["📋 Category Listing Table"]
+        C --> T1[Column: ID]
+        C --> T2[Column: Name + Image/Icon]
+        C --> T3["Column: Parent<br/>(for subcategories)"]
+        C --> T4[Column: Products Count]
+        C --> T5[Column: Orders Count]
+        C --> T6[Column: Status]
+        C --> T7[Column: Actions]
+    end
+
+    subgraph ACTIONS["⚡ Table Actions"]
+        T7 --> ACT1[Update Category]
+        T7 --> ACT2[Delete Category]
+    end
+
+    subgraph CREATE_CAT["➕ Create Category"]
+        A -->|Add Category CTA| CC1[Open Category Form]
+        CC1 --> CC2["Enter Name*"]
+        CC2 --> CC3["Upload Image / Icon"]
+        CC3 --> CC4["Set Status<br/>Active / Inactive"]
+        CC4 --> CC5["parent_id = null"]
+        CC5 --> CC6[POST /categories]
+        CC6 --> CC7[Category Created ✅]
+        CC7 --> B
+    end
+
+    subgraph CREATE_SUB["➕ Create Subcategory"]
+        A -->|Add Subcategory CTA| CS1[Open Subcategory Form]
+        CS1 --> CS2["Select Parent Category*<br/>Dropdown"]
+        CS2 --> CS3["Enter Subcategory Name*"]
+        CS3 --> CS4["Set Status<br/>Active / Inactive"]
+        CS4 --> CS5["parent_id = selected category ID"]
+        CS5 --> CS6[POST /categories]
+        CS6 --> CS7[Subcategory Created ✅]
+        CS7 --> B
+    end
+
+    subgraph UPDATE["✏️ Update Category / Subcategory"]
+        ACT1 --> U1[Load Current Data]
+        U1 --> U2["Edit Name"]
+        U2 --> U3["Change Image / Icon"]
+        U3 --> U4["Toggle Status"]
+        U4 --> U5[PUT /categories/id]
+        U5 --> U6[Category Updated ✅]
+        U6 --> B
+    end
+
+    subgraph DELETE["🗑️ Delete Category"]
+        ACT2 --> D1{Has Associated Products?}
+        D1 -->|Yes| D2["❌ Error: Cannot Delete<br/>Category has products.<br/>Reassign or remove products first."]
+        D1 -->|No| D3[Show Confirmation Dialog]
+        D3 -->|Confirm| D4[DELETE /categories/id]
+        D3 -->|Cancel| D5[Close Dialog]
+        D4 --> D6[Category Deleted ✅]
+        D6 --> B
+    end
+
+    subgraph HIERARCHY["🌳 Category Hierarchy View"]
+        C --> H1["Category: Antibiotics<br/>├─ Penicillins (30 products)<br/>├─ Cephalosporins (25 products)<br/>└─ Macrolides (20 products)"]
+        C --> H2["Category: Pain Relief<br/>├─ NSAIDs (40 products)<br/>└─ Opioids (15 products)"]
+    end
+
+    style LOAD fill:#e8f5e9,stroke:#2e7d32
+    style TABLE fill:#e3f2fd,stroke:#1565c0
+    style ACTIONS fill:#fff3e0,stroke:#e65100
+    style CREATE_CAT fill:#f3e5f5,stroke:#6a1b9a
+    style CREATE_SUB fill:#ede7f6,stroke:#4527a0
+    style UPDATE fill:#e0f7fa,stroke:#00838f
+    style DELETE fill:#ffebee,stroke:#b71c1c
+    style HIERARCHY fill:#fff8e1,stroke:#f9a825

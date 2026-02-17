@@ -1,0 +1,63 @@
+---
+title: Telehealth — Bookings & Subscriptions Workflow
+---
+graph TD
+    subgraph ADMIN_VIEW["🩺 Telehealth Admin View"]
+        A[Orders Section] --> B["🔀 Telehealth Tab"]
+        B --> B1["📅 Bookings Sub-Tab"]
+        B --> B2["🔁 Subscriptions Sub-Tab"]
+    end
+
+    subgraph BOOKINGS["📅 Telehealth Bookings"]
+        B1 --> BK[GET /orders/telehealth/bookings]
+        BK --> BK_TABLE[Bookings Table]
+        BK_TABLE --> BKT1[ID]
+        BK_TABLE --> BKT2[Customer]
+        BK_TABLE --> BKT3["Items<br/>(Service type)"]
+        BK_TABLE --> BKT4[Total Amount]
+        BK_TABLE --> BKT5[Payment Status]
+        BK_TABLE --> BKT6[Date & Time]
+    end
+
+    subgraph SUBSCRIPTIONS["🔁 Telehealth Subscriptions"]
+        B2 --> SB[GET /orders/telehealth/subscriptions]
+        SB --> SB_TABLE[Subscriptions Table]
+        SB_TABLE --> SBT1[ID]
+        SB_TABLE --> SBT2[Customer]
+        SB_TABLE --> SBT3["Service<br/>(e.g. Mental Health)"]
+        SB_TABLE --> SBT4["Package<br/>(Monthly / Quarterly)"]
+        SB_TABLE --> SBT5[Price]
+        SB_TABLE --> SBT6["Status<br/>(active / expired / cancelled)"]
+        SB_TABLE --> SBT7[Date]
+    end
+
+    subgraph BOOKING_FLOW["💡 Customer Booking Flow (Background)"]
+        CF1[Customer Needs Prescription Med<br/>Without Prescription] --> CF2[Books Telehealth Consultation]
+        CF2 --> CF3[Selects Service Type]
+        CF3 --> CF4[Selects Available Time Slot]
+        CF4 --> CF5[Pays Consultation Fee]
+        CF5 --> CF6[Booking Confirmed]
+        CF6 --> CF7[Doctor Conducts Consultation]
+        CF7 --> CF8{Outcome}
+        CF8 -->|Prescription Needed| CF9[Doctor Sends Prescription<br/>to Pharmacist]
+        CF9 --> CF10[Pharmacist Processes<br/>Prescription Order]
+        CF8 -->|Advice Only| CF11[Consultation Complete]
+    end
+
+    subgraph SUB_FLOW["💡 Subscription Flow (Background)"]
+        SF1[Customer Subscribes to<br/>Recurring Health Service] --> SF2[Selects Package<br/>Monthly / Quarterly / Annual]
+        SF2 --> SF3[Initial Payment Processed]
+        SF3 --> SF4[Subscription Active]
+        SF4 --> SF5[Auto-Renewal at Interval]
+        SF5 --> SF6{Payment Result}
+        SF6 -->|Success| SF7[Subscription Renewed]
+        SF6 -->|Failed| SF8[Subscription At Risk<br/>Retry Payment]
+        SF4 --> SF9[Customer Can Cancel]
+        SF9 --> SF10[Subscription Cancelled]
+    end
+
+    style ADMIN_VIEW fill:#e8f5e9,stroke:#2e7d32
+    style BOOKINGS fill:#e3f2fd,stroke:#1565c0
+    style SUBSCRIPTIONS fill:#f3e5f5,stroke:#6a1b9a
+    style BOOKING_FLOW fill:#fff8e1,stroke:#f9a825
+    style SUB_FLOW fill:#e0f7fa,stroke:#00838f

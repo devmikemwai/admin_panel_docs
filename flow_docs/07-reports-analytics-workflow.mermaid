@@ -1,0 +1,102 @@
+---
+title: Reports & Analytics — Complete Workflow
+---
+graph TD
+    subgraph LOAD["📈 Reports Module Load"]
+        A[Admin Opens Reports] --> B[Select Period Filter]
+        B --> B1["Today / This Week /<br/>This Month / This Year / Custom"]
+        B1 --> B2{Custom?}
+        B2 -->|Yes| B3[Set Start Date + End Date]
+        B2 -->|No| B4[Use Preset Period]
+        B3 & B4 --> B5[Apply Filter CTA]
+        A --> EX[Export Reports CTA<br/>GET /reports/export?type=...&period=...]
+        EX --> EX1[Download PDF Report]
+    end
+
+    subgraph OVERVIEW["📊 Overview Stats"]
+        B5 --> OV[GET /reports/overview]
+        OV --> OV1["Todays Sales<br/>Amount + No. of Orders"]
+        OV --> OV2["This Week<br/>Amount + Orders"]
+        OV --> OV3["This Month<br/>Amount + Orders"]
+        OV --> OV4["This Year<br/>Amount + Orders"]
+    end
+
+    subgraph TABS["🔀 Report Tabs"]
+        B5 --> TAB[Select Report Tab]
+        TAB --> TAB1["💰 Sales"]
+        TAB --> TAB2["📦 Inventory"]
+        TAB --> TAB3["🧾 Orders"]
+        TAB --> TAB4["👥 Users"]
+        TAB --> TAB5["🚚 Deliveries"]
+        TAB --> TAB6["❤️ Wishlist"]
+    end
+
+    subgraph SALES["💰 Sales Report"]
+        TAB1 --> SA[GET /reports/sales]
+        SA --> SA1["Revenue by Category<br/>Category → Revenue breakdown"]
+        SA --> SA2["Sales Trend (30 Days)<br/>Daily revenue line chart"]
+        SA --> SA3["Top Products Table<br/>Name / Orders / Sold Units / Revenue"]
+    end
+
+    subgraph INVENTORY["📦 Inventory Report"]
+        TAB2 --> INV[GET /reports/inventory]
+        INV --> INV1["✅ In Stock Count"]
+        INV --> INV2["❌ Out of Stock Count"]
+        INV --> INV3["⚠️ Low Stock Count"]
+        INV --> INV4["🔥 Fast Moving Items<br/>High demand products listing"]
+        INV --> INV5["⚠️ Low Stock Alerts<br/>Product / Current Stock / Threshold"]
+        INV --> INV6["❌ Out of Stock Alerts<br/>Product / Last In Stock Date"]
+    end
+
+    subgraph ORDERS_RPT["🧾 Orders Report"]
+        TAB3 --> ORD[GET /reports/orders]
+        ORD --> ORD1["Total / Pending / Completed / Cancelled"]
+        ORD --> ORD2["Orders by Type"]
+        ORD2 --> ORD2a["Prescription Orders"]
+        ORD2 --> ORD2b["Regular Orders"]
+        ORD2 --> ORD2c["Wishlist Conversions"]
+        ORD --> ORD3["Turnaround Performance"]
+        ORD3 --> ORD3a["Average TAT (minutes)"]
+        ORD3 --> ORD3b["On-Time Delivery %"]
+        ORD3 --> ORD3c["Fastest Order (minutes)"]
+        ORD3 --> ORD3d["Slowest Order (minutes)"]
+    end
+
+    subgraph USERS_RPT["👥 Users Report"]
+        TAB4 --> USR[GET /reports/users]
+        USR --> USR1["Total Users"]
+        USR --> USR2["Active Users"]
+        USR --> USR3["New Users (30 Days)"]
+    end
+
+    subgraph DELIVERY_RPT["🚚 Deliveries Report"]
+        TAB5 --> DEL[GET /reports/deliveries]
+        DEL --> DEL1["Total Deliveries"]
+        DEL --> DEL2["Completed"]
+        DEL --> DEL3["In Transit"]
+        DEL --> DEL4["Average Delivery Time (minutes)"]
+    end
+
+    subgraph WISHLIST_RPT["❤️ Wishlist Report"]
+        TAB6 --> WL[GET /reports/wishlist]
+        WL --> WL1["Total Wishlists"]
+        WL --> WL2["Unique Users"]
+        WL --> WL3["Converted Orders"]
+        WL --> WL4["Conversion Rate %"]
+        WL --> WL5["Most Wishlisted Products Table"]
+        WL5 --> WL5a["Product Name"]
+        WL5 --> WL5b["Price"]
+        WL5 --> WL5c["Times Wishlisted"]
+        WL5 --> WL5d["Conversions"]
+        WL5 --> WL5e["Conversion Rate %"]
+    end
+
+    style LOAD fill:#e8f5e9,stroke:#2e7d32
+    style OVERVIEW fill:#e3f2fd,stroke:#1565c0
+    style TABS fill:#fff8e1,stroke:#f9a825
+    style SALES fill:#f3e5f5,stroke:#6a1b9a
+    style INVENTORY fill:#e0f7fa,stroke:#00838f
+    style ORDERS_RPT fill:#fff3e0,stroke:#e65100
+    style USERS_RPT fill:#fce4ec,stroke:#c62828
+    style DELIVERY_RPT fill:#e0f2f1,stroke:#00695c
+    style WISHLIST_RPT fill:#fbe9e7,stroke:#bf360c

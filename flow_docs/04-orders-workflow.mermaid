@@ -1,0 +1,129 @@
+---
+title: Orders — Complete Workflow
+---
+graph TD
+    subgraph LOAD["📦 Orders Module Load"]
+        A[Admin Opens Orders] --> B[GET /orders/stats]
+        B --> C[Render Stat Cards]
+        A --> D[GET /orders]
+        D --> E[Render Order Table]
+    end
+
+    subgraph STATS["📊 Order Stats"]
+        C --> S1[Total Orders]
+        C --> S2[Pending]
+        C --> S3[Processing]
+        C --> S4[Dispatched]
+        C --> S5[Completed]
+        C --> S6[Unpaid]
+        C --> S7[Todays Revenue]
+    end
+
+    subgraph TABS["🔀 Order Type Tabs"]
+        E --> TAB1["💊 Pharmacy Orders Tab"]
+        E --> TAB2["🩺 Telehealth Tab"]
+        TAB1 -->|Selected| D
+        TAB2 --> TH_TABS
+    end
+
+    subgraph TH_TABS["🩺 Telehealth Sub-Tabs"]
+        TAB2 --> TH1[Telehealth Bookings<br/>GET /orders/telehealth/bookings]
+        TAB2 --> TH2[Telehealth Subscriptions<br/>GET /orders/telehealth/subscriptions]
+    end
+
+    subgraph TH_BOOK["📅 Telehealth Bookings Table"]
+        TH1 --> TB1[ID]
+        TH1 --> TB2[Customer]
+        TH1 --> TB3[Items]
+        TH1 --> TB4[Total]
+        TH1 --> TB5[Payment]
+        TH1 --> TB6[Date]
+    end
+
+    subgraph TH_SUB["🔁 Telehealth Subscriptions Table"]
+        TH2 --> TS1[ID]
+        TH2 --> TS2[Customer]
+        TH2 --> TS3[Service]
+        TH2 --> TS4[Package]
+        TH2 --> TS5[Price]
+        TH2 --> TS6[Status]
+        TH2 --> TS7[Date]
+    end
+
+    subgraph FILTERS["🔍 Filters"]
+        E --> F1["Status Filter<br/>pending / processing /<br/>dispatched / completed"]
+        E --> F2["Payment Status<br/>paid / unpaid / partial"]
+        E --> F3["Date Range<br/>From → To"]
+        E --> F4["Search<br/>Order ID / Customer"]
+        F1 & F2 & F3 & F4 -->|Apply| D
+    end
+
+    subgraph TABLE["📋 Order Listing Table"]
+        E --> OT1[Order ID]
+        E --> OT2[Customer]
+        E --> OT3[Items Count]
+        E --> OT4[Total Amount]
+        E --> OT5[Payment Status]
+        E --> OT6[Order Status]
+        E --> OT7[Date]
+        E --> OT8["Actions: View Details"]
+    end
+
+    subgraph DETAIL["📄 Order Detail View"]
+        OT8 -->|Click| DET[GET /orders/id]
+        DET --> DET1["👤 Customer Details<br/>Name / Phone / Email<br/>Gender / DOB<br/>Insurance Details"]
+        DET --> DET2["🚚 Delivery Info<br/>Zone / Address"]
+        DET --> DET3["🛍️ Order Items<br/>Product / Qty / Price / Total"]
+        DET --> DET4["💰 Order Summary<br/>Subtotal / Delivery Fee<br/>Discount / Total"]
+        DET --> DET5["💳 Payment Info<br/>Method / Status<br/>Transaction ID / Paid At"]
+        DET --> DET6["🔄 Nextech Sync"]
+        DET --> DET7["📋 Fulfillment Workflow"]
+        DET --> DET8["📍 Tracking"]
+        DET --> DET9["📝 Admin Notes"]
+    end
+
+    subgraph NEXTECH["🔄 Nextech Inventory Sync"]
+        DET6 --> NX1{Payment Successful?}
+        NX1 -->|No| NX2[Status: Not Posted<br/>Waiting for payment]
+        NX1 -->|Yes| NX3[Status: Posted]
+        NX3 --> NX4[Posted At: timestamp]
+        NX3 --> NX5[Items Posted: ✅]
+    end
+
+    subgraph FULFILL["📋 Fulfillment Workflow"]
+        DET7 --> FW1["1️⃣ Pending (default)"]
+        FW1 -->|PATCH /orders/id/fulfillment| FW2["2️⃣ Received"]
+        FW2 -->|Update| FW3["3️⃣ Preparing"]
+        FW3 -->|Update| FW4["4️⃣ Ready"]
+        FW4 -->|Update| FW5["5️⃣ Dispatched"]
+        FW5 -->|Update| FW6["6️⃣ Delivered"]
+    end
+
+    subgraph TRACKING["📍 Tracking Management"]
+        DET8 --> TR1[POST /orders/id/tracking]
+        TR1 --> TR2[Enter Tracking Number]
+        TR2 --> TR3[Enter Carrier Name]
+        TR3 --> TR4[Enter Tracking URL]
+        TR4 --> TR5[Tracking Saved ✅]
+    end
+
+    subgraph NOTES["📝 Admin Notes"]
+        DET9 --> NT1[View Existing Notes<br/>Author / Timestamp]
+        NT1 --> NT2[POST /orders/id/notes]
+        NT2 --> NT3[Enter Note Text]
+        NT3 --> NT4[Note Added ✅]
+    end
+
+    style LOAD fill:#e8f5e9,stroke:#2e7d32
+    style STATS fill:#e3f2fd,stroke:#1565c0
+    style TABS fill:#fff8e1,stroke:#f9a825
+    style TH_TABS fill:#fff8e1,stroke:#f9a825
+    style TH_BOOK fill:#f1f8e9,stroke:#558b2f
+    style TH_SUB fill:#f1f8e9,stroke:#558b2f
+    style FILTERS fill:#fff3e0,stroke:#e65100
+    style TABLE fill:#e0f7fa,stroke:#00838f
+    style DETAIL fill:#f3e5f5,stroke:#6a1b9a
+    style NEXTECH fill:#e8eaf6,stroke:#283593
+    style FULFILL fill:#e0f2f1,stroke:#00695c
+    style TRACKING fill:#fce4ec,stroke:#c62828
+    style NOTES fill:#efebe9,stroke:#4e342e

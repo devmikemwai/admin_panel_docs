@@ -1,0 +1,107 @@
+---
+title: Products — Complete Workflow
+---
+graph TD
+    subgraph LOAD["🛒 Products Module Load"]
+        A[Admin Opens Products] --> B[GET /products/stats]
+        B --> C[Render Stat Cards]
+        A --> D[GET /products]
+        D --> E[Render Product Table]
+    end
+
+    subgraph STATS["📊 Product Stats"]
+        C --> S1[Total Products]
+        C --> S2[Active Products]
+        C --> S3[Inactive Products]
+        C --> S4[Low Stock]
+        C --> S5[Out of Stock]
+        C --> S6[With Offers]
+        C --> S7[Prescription]
+        C --> S8[Featured]
+        C --> S9[Popular Products]
+    end
+
+    subgraph FILTERS["🔍 Filters & Search"]
+        E --> F1[Filter: By Category<br/>Dropdown]
+        E --> F2[Filter: By Stock<br/>in_stock / low / out]
+        E --> F3[Filter: By Status<br/>active / inactive]
+        E --> F4[Search: Name / SKU / Brand]
+        F1 & F2 & F3 & F4 -->|Apply| D
+    end
+
+    subgraph TABLE["📋 Product Listing Table"]
+        E --> T1["Image + Name + SKU"]
+        E --> T2["Category + Subcategory"]
+        E --> T3["Price"]
+        E --> T4["Stock Qty + Status"]
+        E --> T5["Status: Active/Inactive"]
+        E --> T6["Actions Column"]
+    end
+
+    subgraph ACTIONS["⚡ Product Actions"]
+        T6 --> ACT1[Edit Product]
+        T6 --> ACT2[Update Stock]
+        T6 --> ACT3[Set Discount]
+        T6 --> ACT4[Delete Product]
+    end
+
+    subgraph ADD["➕ Add / Edit Product"]
+        A -->|Add Product CTA| ADD1[Open Product Form]
+        ACT1 -->|Load Data| ADD1
+        ADD1 --> ADD2["Basic Info<br/>Name* / SKU* / Category*<br/>Subcategory / Brand<br/>Generic Name / Manufacturer"]
+        ADD2 --> ADD3["Descriptions<br/>Short Description<br/>Full Description"]
+        ADD3 --> ADD4["Medication Details<br/>Dosage Form dropdown<br/>Strength / Pack Size"]
+        ADD4 --> ADD5["Pricing & Stock<br/>Selling Price* / Compare Price<br/>Cost Price / Stock Qty*<br/>Low Stock Threshold"]
+        ADD5 --> ADD6["Product Image<br/>Preview + Upload CTA"]
+        ADD6 --> ADD7["Settings<br/>☑ Requires Prescription<br/>☑ Active on Store<br/>☑ Featured Product"]
+        ADD7 --> ADD8{New or Edit?}
+        ADD8 -->|New| ADD9[POST /products]
+        ADD8 -->|Edit| ADD10[PUT /products/id]
+        ADD9 --> ADD11[Product Created ✅]
+        ADD10 --> ADD12[Product Updated ✅]
+        ADD11 & ADD12 --> D
+    end
+
+    subgraph STOCK["📦 Update Stock Modal"]
+        ACT2 --> STK1[Show Current Stock]
+        STK1 --> STK2{Adjustment Type}
+        STK2 -->|Set to Exact| STK3[Enter Exact Quantity]
+        STK2 -->|Add to Stock| STK4[Enter Add Quantity]
+        STK2 -->|Subtract| STK5[Enter Subtract Quantity]
+        STK3 & STK4 & STK5 --> STK6["Reason (Optional)"]
+        STK6 --> STK7[PATCH /products/id/stock]
+        STK7 --> STK8[Stock Updated ✅<br/>Previous → New]
+    end
+
+    subgraph DISCOUNT["🏷️ Set Offer / Discount Modal"]
+        ACT3 --> DSC1[Show Current Price]
+        DSC1 --> DSC2{Discount Action}
+        DSC2 -->|Apply Offer| DSC3{Discount Type}
+        DSC3 -->|Percentage Off| DSC4["Enter Value<br/>e.g. 10 = 10% off"]
+        DSC3 -->|Fixed Amount| DSC5["Enter Value<br/>e.g. 100 = KES 100 off"]
+        DSC4 & DSC5 --> DSC6[CTA: Apply Offer]
+        DSC6 --> DSC7[PATCH /products/id/discount<br/>action: apply]
+        DSC2 -->|Remove Offer| DSC8[CTA: Remove Existing Offer]
+        DSC8 --> DSC9[PATCH /products/id/discount<br/>action: remove]
+        DSC2 -->|Cancel| DSC10[Close Modal]
+        DSC7 --> DSC11[Discount Applied ✅]
+        DSC9 --> DSC12[Discount Removed ✅]
+    end
+
+    subgraph DELETE["🗑️ Delete Product"]
+        ACT4 --> DEL1[Confirmation Dialog]
+        DEL1 -->|Confirm| DEL2[DELETE /products/id]
+        DEL1 -->|Cancel| DEL3[Close Dialog]
+        DEL2 --> DEL4[Product Deleted ✅]
+        DEL4 --> D
+    end
+
+    style LOAD fill:#e8f5e9,stroke:#2e7d32
+    style STATS fill:#e3f2fd,stroke:#1565c0
+    style FILTERS fill:#fff8e1,stroke:#f9a825
+    style TABLE fill:#e0f7fa,stroke:#00838f
+    style ACTIONS fill:#fff3e0,stroke:#e65100
+    style ADD fill:#f3e5f5,stroke:#6a1b9a
+    style STOCK fill:#e8eaf6,stroke:#283593
+    style DISCOUNT fill:#fce4ec,stroke:#c62828
+    style DELETE fill:#ffebee,stroke:#b71c1c
