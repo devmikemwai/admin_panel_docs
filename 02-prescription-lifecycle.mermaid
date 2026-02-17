@@ -1,0 +1,28 @@
+graph TD
+    A[Customer Orders Prescription Item] --> B{Has Prescription?}
+    B -->|Yes| C[Upload Prescription File]
+    B -->|No| D[Request Doctor Consultation]
+    D --> E[Telehealth Consultation]
+    E --> F[Doctor Sends Prescription to Pharmacist]
+    F --> G[Pharmacist Uploads on Behalf of Patient]
+    C --> H[Status: Uploaded]
+    G --> H
+    H --> I[Status: Under Review]
+    I --> J{Pharmacist Review}
+    J -->|Approve| K[Approve & Notify Customer]
+    J -->|Request Modification| L[Request Modification & Notify]
+    J -->|Reject| M[Reject & Notify]
+    L --> N[Customer Resubmits]
+    N --> I
+    M --> O[Order Cancelled / Refund]
+    K --> P[Fulfillment Workflow Enabled]
+    P --> Q{Payment Status}
+    Q -->|Pending| R[Awaiting Payment]
+    R --> S[Payment Received]
+    Q -->|Already Paid| S
+    S --> T[Status: Paid]
+    T --> U[Status: Preparing]
+    U --> V[Nextech Inventory Sync]
+    U --> W[Status: Dispatched]
+    W --> X[Status: Delivered]
+    X --> Y[Status: Completed]

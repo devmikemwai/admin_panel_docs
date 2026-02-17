@@ -1,0 +1,14 @@
+graph TD
+    A[Customer Initiates Payment] --> B[System Sends STK Push]
+    B --> C[Customer Enters PIN on Phone]
+    C --> D{M-Pesa API Callback}
+    D -->|Success| E[Transaction: Successful]
+    D -->|Timeout| F[Transaction: Pending]
+    D -->|Failed| G[Transaction: Failed]
+    E --> H[Update Order Payment: Paid]
+    H --> I[Trigger Nextech Inventory Sync]
+    H --> J[Send Payment Confirmation SMS]
+    F --> K[Poll for Status]
+    K --> D
+    G --> L[Notify Customer of Failure]
+    L --> M[Retry Option Available]

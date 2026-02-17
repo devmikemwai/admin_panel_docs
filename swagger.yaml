@@ -1,0 +1,1967 @@
+openapi: 3.0.3
+info:
+  title: Pharmacy Admin Dashboard API
+  description: |
+    API documentation for the Pharmacy Admin Dashboard covering product management,
+    order processing, prescription management, M-Pesa payments, user management,
+    categories, and reporting/analytics.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: dev@pharmacy.com
+
+servers:
+  - url: https://api.example.com/api/v1
+    description: Production
+  - url: https://staging-api.example.com/api/v1
+    description: Staging
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Auth
+    description: Authentication endpoints
+  - name: Dashboard
+    description: Dashboard stats and recent data
+  - name: Products
+    description: Product CRUD and inventory management
+  - name: Categories
+    description: Category and subcategory management
+  - name: Orders
+    description: Order management and fulfillment
+  - name: Prescriptions
+    description: Prescription order management
+  - name: Reports
+    description: Reports and analytics
+  - name: Users
+    description: User management
+  - name: M-Pesa
+    description: M-Pesa payment transactions
+
+paths:
+  # ─── AUTH ────────────────────────────────────────────
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Admin login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                      user:
+                        $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ─── DASHBOARD ───────────────────────────────────────
+  /dashboard/stats:
+    get:
+      tags: [Dashboard]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/DashboardStats"
+
+  /dashboard/recent-prescriptions:
+    get:
+      tags: [Dashboard]
+      summary: Get recent prescription orders for dashboard
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: Recent prescription listings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PrescriptionListItem"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+
+  /dashboard/payment-details:
+    get:
+      tags: [Dashboard]
+      summary: Detailed payment/revenue breakdown
+      responses:
+        "200":
+          description: Payment details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/PaymentDetails"
+
+  # ─── PRODUCTS ────────────────────────────────────────
+  /products/stats:
+    get:
+      tags: [Products]
+      summary: Get product statistics
+      responses:
+        "200":
+          description: Product stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/ProductStats"
+
+  /products:
+    get:
+      tags: [Products]
+      summary: List products with filtering
+      parameters:
+        - name: category_id
+          in: query
+          schema:
+            type: integer
+        - name: stock_status
+          in: query
+          schema:
+            type: string
+            enum: [in_stock, low_stock, out_of_stock]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive]
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name, SKU, brand
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [name, price, stock, created_at]
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: Product list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProductListItem"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+    post:
+      tags: [Products]
+      summary: Create a new product
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ProductCreateRequest"
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Product"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /products/{id}:
+    get:
+      tags: [Products]
+      summary: Get product details
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Product detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Products]
+      summary: Update a product
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ProductCreateRequest"
+      responses:
+        "200":
+          description: Product updated
+    delete:
+      tags: [Products]
+      summary: Delete a product
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Product deleted
+
+  /products/{id}/stock:
+    patch:
+      tags: [Products]
+      summary: Update product stock
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [adjustment_type, quantity]
+              properties:
+                adjustment_type:
+                  type: string
+                  enum: [set, add, subtract]
+                quantity:
+                  type: integer
+                  minimum: 0
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Stock updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/StockUpdateResponse"
+
+  /products/{id}/discount:
+    patch:
+      tags: [Products]
+      summary: Apply or remove a discount
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [apply, remove]
+                discount_type:
+                  type: string
+                  enum: [percentage, fixed]
+                discount_value:
+                  type: number
+      responses:
+        "200":
+          description: Discount updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/DiscountResponse"
+
+  # ─── CATEGORIES ──────────────────────────────────────
+  /categories:
+    get:
+      tags: [Categories]
+      summary: List categories and subcategories
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [category, subcategory]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive]
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Category list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Category"
+    post:
+      tags: [Categories]
+      summary: Create a category or subcategory
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                parent_id:
+                  type: integer
+                  nullable: true
+                  description: Set to a category ID to create a subcategory
+                status:
+                  type: string
+                  enum: [active, inactive]
+                  default: active
+                image:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Category created
+
+  /categories/{id}:
+    put:
+      tags: [Categories]
+      summary: Update a category
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                status:
+                  type: string
+                  enum: [active, inactive]
+                image:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Category updated
+    delete:
+      tags: [Categories]
+      summary: Delete a category
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Category deleted
+        "400":
+          description: Cannot delete category with associated products
+
+  # ─── ORDERS ──────────────────────────────────────────
+  /orders/stats:
+    get:
+      tags: [Orders]
+      summary: Get order statistics
+      responses:
+        "200":
+          description: Order stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/OrderStats"
+
+  /orders:
+    get:
+      tags: [Orders]
+      summary: List orders with filtering
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [pharmacy, telehealth]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, dispatched, completed, cancelled]
+        - name: payment_status
+          in: query
+          schema:
+            type: string
+            enum: [paid, unpaid, partial]
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: search
+          in: query
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: Order list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OrderListItem"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+
+  /orders/{id}:
+    get:
+      tags: [Orders]
+      summary: Get full order details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/OrderDetail"
+
+  /orders/{id}/fulfillment:
+    patch:
+      tags: [Orders]
+      summary: Update order fulfillment status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [pending, received, preparing, ready, dispatched, delivered]
+      responses:
+        "200":
+          description: Fulfillment updated
+
+  /orders/{id}/tracking:
+    post:
+      tags: [Orders]
+      summary: Add tracking information
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tracking_number:
+                  type: string
+                carrier:
+                  type: string
+                url:
+                  type: string
+                  format: uri
+      responses:
+        "200":
+          description: Tracking added
+
+  /orders/{id}/notes:
+    post:
+      tags: [Orders]
+      summary: Add admin note to order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note:
+                  type: string
+      responses:
+        "200":
+          description: Note added
+
+  /orders/telehealth/bookings:
+    get:
+      tags: [Orders]
+      summary: List telehealth bookings
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Telehealth booking list
+
+  /orders/telehealth/subscriptions:
+    get:
+      tags: [Orders]
+      summary: List telehealth subscriptions
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: Telehealth subscription list
+
+  # ─── PRESCRIPTIONS ──────────────────────────────────
+  /prescriptions/stats:
+    get:
+      tags: [Prescriptions]
+      summary: Get prescription stats
+      responses:
+        "200":
+          description: Prescription stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/PrescriptionStats"
+
+  /prescriptions:
+    get:
+      tags: [Prescriptions]
+      summary: List prescription orders
+      parameters:
+        - name: payment_status
+          in: query
+          schema:
+            type: string
+            enum: [pending, paid, failed]
+        - name: fulfillment_status
+          in: query
+          schema:
+            type: string
+            enum: [under_review, approved, rejected, uploaded, consultation_done, paid, preparing, dispatched, delivered, completed]
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: search
+          in: query
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: Prescription order list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PrescriptionListItem"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+
+  /prescriptions/{id}:
+    get:
+      tags: [Prescriptions]
+      summary: Get full prescription order detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Prescription order detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/PrescriptionDetail"
+
+  /prescriptions/{id}/review:
+    patch:
+      tags: [Prescriptions]
+      summary: Review prescription (approve, modify, reject)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [approve, request_modification, reject]
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: Review action completed
+
+  /prescriptions/{id}/upload:
+    post:
+      tags: [Prescriptions]
+      summary: Upload prescription file
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Prescription uploaded
+
+  /prescriptions/{id}/fulfillment:
+    patch:
+      tags: [Prescriptions]
+      summary: Update prescription fulfillment status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [uploaded, doctor_consultation_done, paid, preparing, dispatched, delivered, completed]
+      responses:
+        "200":
+          description: Fulfillment updated
+
+  /prescriptions/{id}/delivery-fee:
+    patch:
+      tags: [Prescriptions]
+      summary: Update delivery fee
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [delivery_fee]
+              properties:
+                delivery_fee:
+                  type: number
+      responses:
+        "200":
+          description: Delivery fee updated
+
+  /prescriptions/{id}/medications:
+    post:
+      tags: [Prescriptions]
+      summary: Add medication on behalf of patient
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddMedicationRequest"
+      responses:
+        "200":
+          description: Medication added
+
+  /prescriptions/{id}/medications/search:
+    get:
+      tags: [Prescriptions]
+      summary: Search medications for adding to prescription
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Medication search results
+
+  # ─── REPORTS ─────────────────────────────────────────
+  /reports/overview:
+    get:
+      tags: [Reports]
+      summary: Overview stats (today, week, month, year)
+      parameters:
+        - $ref: "#/components/parameters/Period"
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+      responses:
+        "200":
+          description: Overview report
+
+  /reports/sales:
+    get:
+      tags: [Reports]
+      summary: Sales analytics
+      parameters:
+        - $ref: "#/components/parameters/Period"
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+      responses:
+        "200":
+          description: Sales report data
+
+  /reports/inventory:
+    get:
+      tags: [Reports]
+      summary: Inventory report
+      responses:
+        "200":
+          description: Inventory report data
+
+  /reports/orders:
+    get:
+      tags: [Reports]
+      summary: Order analytics
+      parameters:
+        - $ref: "#/components/parameters/Period"
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+      responses:
+        "200":
+          description: Order report data
+
+  /reports/users:
+    get:
+      tags: [Reports]
+      summary: User analytics
+      responses:
+        "200":
+          description: User report data
+
+  /reports/deliveries:
+    get:
+      tags: [Reports]
+      summary: Delivery analytics
+      responses:
+        "200":
+          description: Delivery report data
+
+  /reports/wishlist:
+    get:
+      tags: [Reports]
+      summary: Wishlist analytics
+      responses:
+        "200":
+          description: Wishlist report data
+
+  /reports/export:
+    get:
+      tags: [Reports]
+      summary: Export report as PDF
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [sales, inventory, orders, users, deliveries, wishlist]
+        - $ref: "#/components/parameters/Period"
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/EndDate"
+      responses:
+        "200":
+          description: PDF report file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  # ─── USERS ──────────────────────────────────────────
+  /users/stats:
+    get:
+      tags: [Users]
+      summary: Get user stats
+      responses:
+        "200":
+          description: User stats
+
+  /users:
+    get:
+      tags: [Users]
+      summary: List users
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [admin, staff, pharmacist, doctor, customer]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: User list
+    post:
+      tags: [Users]
+      summary: Create a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreateRequest"
+      responses:
+        "201":
+          description: User created
+
+  /users/{id}:
+    put:
+      tags: [Users]
+      summary: Update a user
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreateRequest"
+      responses:
+        "200":
+          description: User updated
+    delete:
+      tags: [Users]
+      summary: Delete a user
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: User deleted
+
+  # ─── M-PESA ─────────────────────────────────────────
+  /mpesa/stats:
+    get:
+      tags: [M-Pesa]
+      summary: Get M-Pesa payment stats
+      responses:
+        "200":
+          description: M-Pesa stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/MpesaStats"
+
+  /mpesa/transactions:
+    get:
+      tags: [M-Pesa]
+      summary: List M-Pesa transactions
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [successful, pending, failed]
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by transaction ID, order number, name, phone
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: Transaction list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MpesaTransaction"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+
+  /mpesa/transactions/{transaction_id}:
+    get:
+      tags: [M-Pesa]
+      summary: Get transaction details
+      parameters:
+        - name: transaction_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Transaction detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/MpesaTransactionDetail"
+
+# ═══════════════════════════════════════════════════════
+# COMPONENTS
+# ═══════════════════════════════════════════════════════
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    PerPage:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        default: 20
+    ResourceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    Period:
+      name: period
+      in: query
+      schema:
+        type: string
+        enum: [today, this_week, this_month, this_year, custom]
+    StartDate:
+      name: start_date
+      in: query
+      schema:
+        type: string
+        format: date
+    EndDate:
+      name: end_date
+      in: query
+      schema:
+        type: string
+        format: date
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: Unauthorized
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: Resource not found
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+              errors:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+
+  schemas:
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [admin, staff, pharmacist, doctor, customer]
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    UserCreateRequest:
+      type: object
+      required: [name, email, role, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [admin, staff, pharmacist, doctor]
+        password:
+          type: string
+          format: password
+
+    DashboardStats:
+      type: object
+      properties:
+        total_revenue:
+          type: number
+        todays_revenue:
+          type: number
+        total_orders:
+          type: integer
+        pending_orders:
+          type: integer
+        total_prescriptions:
+          type: integer
+        pending_prescription_reviews:
+          type: integer
+        total_users:
+          type: integer
+        total_products:
+          type: integer
+
+    PaymentDetails:
+      type: object
+      properties:
+        total_revenue:
+          type: number
+        revenue_by_method:
+          type: object
+          properties:
+            mpesa:
+              type: number
+            card:
+              type: number
+            cash:
+              type: number
+        revenue_by_period:
+          type: object
+          properties:
+            today:
+              type: number
+            this_week:
+              type: number
+            this_month:
+              type: number
+
+    ProductStats:
+      type: object
+      properties:
+        total_products:
+          type: integer
+        active_products:
+          type: integer
+        inactive_products:
+          type: integer
+        low_stock:
+          type: integer
+        out_of_stock:
+          type: integer
+        with_offers:
+          type: integer
+        prescription_products:
+          type: integer
+        featured_products:
+          type: integer
+        popular_products:
+          type: integer
+
+    ProductListItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sku:
+          type: string
+        image_url:
+          type: string
+        category:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        subcategory:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        price:
+          type: number
+        stock:
+          type: object
+          properties:
+            quantity:
+              type: integer
+            status:
+              type: string
+              enum: [in_stock, low_stock, out_of_stock]
+        status:
+          type: string
+          enum: [active, inactive]
+        requires_prescription:
+          type: boolean
+        featured:
+          type: boolean
+
+    Product:
+      allOf:
+        - $ref: "#/components/schemas/ProductListItem"
+        - type: object
+          properties:
+            brand:
+              type: string
+            generic_name:
+              type: string
+            manufacturer:
+              type: string
+            short_description:
+              type: string
+            full_description:
+              type: string
+            dosage_form:
+              type: string
+              enum: [tablet, capsule, syrup, injection, cream, ointment, drops, inhaler, suppository, powder, suspension, gel, patch, spray]
+            strength:
+              type: string
+            pack_size:
+              type: string
+            selling_price:
+              type: number
+            compare_at_price:
+              type: number
+            cost_price:
+              type: number
+            stock_quantity:
+              type: integer
+            low_stock_threshold:
+              type: integer
+            discount:
+              type: object
+              nullable: true
+              properties:
+                type:
+                  type: string
+                  enum: [percentage, fixed]
+                value:
+                  type: number
+                discounted_price:
+                  type: number
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+
+    ProductCreateRequest:
+      type: object
+      required: [name, sku, category_id, selling_price, stock_quantity]
+      properties:
+        name:
+          type: string
+        sku:
+          type: string
+        category_id:
+          type: integer
+        subcategory_id:
+          type: integer
+        brand:
+          type: string
+        generic_name:
+          type: string
+        manufacturer:
+          type: string
+        short_description:
+          type: string
+        full_description:
+          type: string
+        dosage_form:
+          type: string
+        strength:
+          type: string
+        pack_size:
+          type: string
+        selling_price:
+          type: number
+        compare_at_price:
+          type: number
+        cost_price:
+          type: number
+        stock_quantity:
+          type: integer
+        low_stock_threshold:
+          type: integer
+        image:
+          type: string
+          format: binary
+        requires_prescription:
+          type: boolean
+          default: false
+        is_active:
+          type: boolean
+          default: true
+        is_featured:
+          type: boolean
+          default: false
+
+    StockUpdateResponse:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        previous_stock:
+          type: integer
+        new_stock:
+          type: integer
+        adjustment_type:
+          type: string
+        quantity:
+          type: integer
+        reason:
+          type: string
+
+    DiscountResponse:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        original_price:
+          type: number
+        discount_type:
+          type: string
+        discount_value:
+          type: number
+        discounted_price:
+          type: number
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        image_url:
+          type: string
+        parent_id:
+          type: integer
+          nullable: true
+        product_count:
+          type: integer
+        order_count:
+          type: integer
+        status:
+          type: string
+          enum: [active, inactive]
+        subcategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+
+    OrderStats:
+      type: object
+      properties:
+        total_orders:
+          type: integer
+        pending:
+          type: integer
+        processing:
+          type: integer
+        dispatched:
+          type: integer
+        completed:
+          type: integer
+        unpaid:
+          type: integer
+        todays_revenue:
+          type: number
+
+    OrderListItem:
+      type: object
+      properties:
+        id:
+          type: string
+        customer:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        items_count:
+          type: integer
+        total:
+          type: number
+        payment_status:
+          type: string
+        status:
+          type: string
+        date:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum: [pharmacy, telehealth]
+
+    OrderDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        customer:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            phone:
+              type: string
+            email:
+              type: string
+            gender:
+              type: string
+            dob:
+              type: string
+              format: date
+            insurance:
+              type: object
+              properties:
+                provider:
+                  type: string
+                policy_number:
+                  type: string
+                member_number:
+                  type: string
+        delivery:
+          type: object
+          properties:
+            zone:
+              type: string
+            address:
+              type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              product_id:
+                type: integer
+              name:
+                type: string
+              sku:
+                type: string
+              quantity:
+                type: integer
+              unit_price:
+                type: number
+              total:
+                type: number
+        order_summary:
+          type: object
+          properties:
+            subtotal:
+              type: number
+            delivery_fee:
+              type: number
+            discount:
+              type: number
+            total:
+              type: number
+        payment:
+          type: object
+          properties:
+            method:
+              type: string
+            status:
+              type: string
+            transaction_id:
+              type: string
+            paid_at:
+              type: string
+              format: date-time
+        nextech_sync:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [pending, posted, failed]
+            posted_at:
+              type: string
+              format: date-time
+              nullable: true
+            items_posted:
+              type: boolean
+        fulfillment:
+          type: object
+          properties:
+            status:
+              type: string
+            workflow:
+              type: array
+              items:
+                type: object
+                properties:
+                  step:
+                    type: string
+                  completed:
+                    type: boolean
+                  at:
+                    type: string
+                    format: date-time
+                    nullable: true
+        tracking:
+          type: object
+          properties:
+            tracking_number:
+              type: string
+              nullable: true
+            carrier:
+              type: string
+              nullable: true
+            url:
+              type: string
+              nullable: true
+        admin_notes:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              note:
+                type: string
+              author:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+
+    PrescriptionStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        under_review:
+          type: integer
+        payment_pending:
+          type: integer
+        paid:
+          type: integer
+        dispatched:
+          type: integer
+        delivered:
+          type: integer
+
+    PrescriptionListItem:
+      type: object
+      properties:
+        id:
+          type: string
+        customer:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        status:
+          type: string
+        payment_status:
+          type: string
+        items_count:
+          type: integer
+        amount:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+
+    PrescriptionDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        customer:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            phone:
+              type: string
+            email:
+              type: string
+            gender:
+              type: string
+            dob:
+              type: string
+              format: date
+            insurance:
+              type: object
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              product_id:
+                type: integer
+              name:
+                type: string
+              quantity:
+                type: integer
+              unit_price:
+                type: number
+              total:
+                type: number
+              dosage:
+                type: string
+              frequency:
+                type: string
+              duration:
+                type: string
+              instructions:
+                type: string
+        order_summary:
+          type: object
+          properties:
+            order_number:
+              type: string
+            date:
+              type: string
+              format: date-time
+            status:
+              type: string
+            subtotal:
+              type: number
+            delivery_fee:
+              type: number
+            total:
+              type: number
+        nextech_sync:
+          type: object
+          properties:
+            status:
+              type: string
+            posted_at:
+              type: string
+              nullable: true
+            items_posted:
+              type: boolean
+        prescription_review:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [under_review, approved, modification_requested, rejected]
+            reviewed_by:
+              type: string
+              nullable: true
+            reviewed_at:
+              type: string
+              nullable: true
+            notes:
+              type: string
+              nullable: true
+        prescription_file:
+          type: object
+          properties:
+            uploaded:
+              type: boolean
+            file_url:
+              type: string
+              nullable: true
+            uploaded_by:
+              type: string
+              enum: [customer, pharmacist]
+              nullable: true
+            uploaded_at:
+              type: string
+              nullable: true
+        fulfillment:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            status:
+              type: string
+            workflow:
+              type: array
+              items:
+                type: object
+                properties:
+                  step:
+                    type: string
+                  completed:
+                    type: boolean
+                  at:
+                    type: string
+                    nullable: true
+        medications:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              product_id:
+                type: integer
+              name:
+                type: string
+              quantity:
+                type: integer
+              dosage:
+                type: string
+              frequency:
+                type: string
+              duration:
+                type: string
+              instructions:
+                type: string
+              added_by:
+                type: string
+                enum: [customer, pharmacist]
+
+    AddMedicationRequest:
+      type: object
+      required: [product_id, quantity]
+      properties:
+        product_id:
+          type: integer
+        quantity:
+          type: integer
+        dosage:
+          type: string
+        frequency:
+          type: string
+        duration:
+          type: string
+        instructions:
+          type: string
+
+    MpesaStats:
+      type: object
+      properties:
+        total_revenue:
+          type: number
+        todays_transactions:
+          type: integer
+        successful:
+          type: integer
+        pending:
+          type: integer
+        failed:
+          type: integer
+
+    MpesaTransaction:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+        order_id:
+          type: string
+        customer:
+          type: object
+          properties:
+            name:
+              type: string
+            phone:
+              type: string
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [successful, pending, failed]
+        date:
+          type: string
+          format: date-time
+
+    MpesaTransactionDetail:
+      allOf:
+        - $ref: "#/components/schemas/MpesaTransaction"
+        - type: object
+          properties:
+            mpesa_receipt:
+              type: string
+            initiated_at:
+              type: string
+              format: date-time
+            completed_at:
+              type: string
+              format: date-time
+              nullable: true
+            callback_data:
+              type: object

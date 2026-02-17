@@ -1,0 +1,31 @@
+graph TD
+    A[Admin Opens Products Section] --> B[View Product Stats]
+    B --> C{Action?}
+    C -->|Add Product| D[Fill Product Form]
+    D --> E[Upload Product Image]
+    E --> F[Set Pricing & Stock]
+    F --> G[Configure Settings]
+    G --> H{Requires Prescription?}
+    H -->|Yes| I[Mark as Prescription Product]
+    H -->|No| J[Regular Product]
+    I --> K[Save Product]
+    J --> K
+    C -->|Edit Product| L[Load Product Data]
+    L --> M[Modify Fields]
+    M --> K
+    C -->|Update Stock| N[Select Adjustment Type]
+    N --> O{Type?}
+    O -->|Set Exact| P[Enter Exact Quantity]
+    O -->|Add to Stock| Q[Enter Add Quantity]
+    O -->|Subtract| R[Enter Subtract Quantity]
+    P --> S[Enter Reason - Optional]
+    Q --> S
+    R --> S
+    S --> T[Save Stock Update]
+    C -->|Set Discount| U{Action?}
+    U -->|Apply| V[Select Discount Type]
+    V --> W[Enter Discount Value]
+    W --> X[Apply Offer]
+    U -->|Remove| Y[Remove Existing Offer]
+    C -->|Delete| Z[Confirm Deletion]
+    Z --> AA[Product Deleted]

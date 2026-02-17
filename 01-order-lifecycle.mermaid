@@ -1,0 +1,21 @@
+graph TD
+    A[Customer Places Order] --> B{Payment Method}
+    B -->|M-Pesa| C[STK Push Initiated]
+    B -->|Card| D[Card Payment Gateway]
+    B -->|Cash on Delivery| E[Order Created - Unpaid]
+    C --> F{Payment Callback}
+    D --> F
+    F -->|Success| G[Order Status: Pending]
+    F -->|Failed| H[Order Status: Unpaid]
+    E --> G
+    G --> I[Nextech Inventory Sync Posted]
+    G --> J[Admin Receives Order]
+    J --> K[Status: Received]
+    K --> L[Status: Preparing]
+    L --> M[Status: Ready]
+    M --> N[Status: Dispatched]
+    N --> O[Tracking Info Added]
+    O --> P[Status: Delivered]
+    H --> Q[Retry Payment / Cancel]
+    Q -->|Retry| C
+    Q -->|Cancel| R[Order Cancelled]

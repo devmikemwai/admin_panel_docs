@@ -1,0 +1,18 @@
+graph TD
+    A[Customer Needs Prescription Medication] --> B{Has Valid Prescription?}
+    B -->|Yes| C[Upload Prescription at Checkout]
+    B -->|No| D[Book Telehealth Consultation]
+    D --> E[Select Service & Package]
+    E --> F[Make Payment for Consultation]
+    F --> G[Doctor Conducts Virtual Consultation]
+    G --> H{Doctor Decision}
+    H -->|Prescribe| I[Doctor Sends Prescription to Pharmacy]
+    H -->|No Prescription Needed| J[Consultation Complete]
+    I --> K[Pharmacist Receives Prescription]
+    K --> L[Pharmacist Uploads Prescription to Order]
+    L --> M[Pharmacist Adds Medications to Order]
+    M --> N[Notify Customer - Order Ready for Payment]
+    N --> O[Customer Makes Payment]
+    O --> P[Prescription Fulfillment Begins]
+    C --> Q[Order Created with Prescription]
+    Q --> R[Pharmacist Reviews Prescription]
